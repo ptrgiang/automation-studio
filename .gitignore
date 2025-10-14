@@ -145,3 +145,5 @@ CLAUDE.md
 # Project specific
 screenshots/
 *.json
+*.txt
+*.csv

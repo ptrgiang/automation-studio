@@ -76,6 +76,44 @@ class TextPropertyEditor(PropertyEditor):
         self.value = value
 
 
+class HybridTextPropertyEditor(PropertyEditor):
+    """Text input with a dropdown for batch column selection."""
+
+    def __init__(self, parent, label: str, value: str, batch_columns: List[str], on_change: Optional[Callable] = None):
+        super().__init__(parent, label, value, on_change)
+
+        self.batch_columns = batch_columns
+        
+        editor_frame = ttk.Frame(self.frame)
+        editor_frame.pack(fill=tk.X)
+
+        self.entry = ttk.Entry(editor_frame, font=(ModernTheme.FONT_FAMILY, 10))
+        self.entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.entry.insert(0, str(value) if value else "")
+        self.entry.bind('<KeyRelease>', lambda e: self._trigger_change(self.entry.get()))
+
+        if self.batch_columns:
+            self.combobox = ttk.Combobox(editor_frame, values=self.batch_columns, state='readonly', width=15)
+            self.combobox.pack(side=tk.LEFT, padx=(5, 0))
+            self.combobox.set("Select Column...")
+            self.combobox.bind('<<ComboboxSelected>>', self._on_column_select)
+
+    def _on_column_select(self, event):
+        selected_column = self.combobox.get()
+        if selected_column:
+            placeholder = f"{{batch:{selected_column}}}"
+            self.set_value(placeholder)
+            self._trigger_change(placeholder)
+
+    def get_value(self) -> str:
+        return self.entry.get()
+
+    def set_value(self, value: str):
+        self.entry.delete(0, tk.END)
+        self.entry.insert(0, str(value) if value else "")
+        self.value = value
+
+
 class NumberPropertyEditor(PropertyEditor):
     """Numeric input property editor with validation"""
 
@@ -272,7 +310,7 @@ class MultilineTextPropertyEditor(PropertyEditor):
 class ActionPropertyPanel:
     """Complete property panel for an action"""
 
-    def __init__(self, parent, action: EnhancedAction, on_change: Optional[Callable] = None):
+    def __init__(self, parent, action: EnhancedAction, on_change: Optional[Callable] = None, batch_columns: List[str] = None):
         """
         Initialize action property panel
 
@@ -280,11 +318,13 @@ class ActionPropertyPanel:
             parent: Parent widget
             action: EnhancedAction object
             on_change: Callback when any property changes (property_name, value)
+            batch_columns: List of column names for batch data.
         """
         self.parent = parent
         self.action = action
         self.on_change = on_change
         self.editors = {}
+        self.batch_columns = batch_columns if batch_columns is not None else []
 
         # Create property editors based on action type
         self._create_common_properties()
@@ -333,11 +373,11 @@ class ActionPropertyPanel:
 
         if action_type == 'type':
             # Text to type
-            text_editor = MultilineTextPropertyEditor(
+            text_editor = HybridTextPropertyEditor(
                 self.parent, "Text to Type",
                 params.get('text', ''),
-                on_change=lambda v: self._on_property_change('text', v),
-                height=4
+                self.batch_columns,
+                on_change=lambda v: self._on_property_change('text', v)
             )
             self.editors['text'] = text_editor
 
@@ -351,9 +391,10 @@ class ActionPropertyPanel:
             )
             self.editors['coordinates'] = coord_editor
 
-            value_editor = TextPropertyEditor(
+            value_editor = HybridTextPropertyEditor(
                 self.parent, "Value",
                 params.get('value', ''),
+                self.batch_columns,
                 on_change=lambda v: self._on_property_change('value', v)
             )
             self.editors['value'] = value_editor

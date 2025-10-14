@@ -46,7 +46,7 @@ python automation_studio.py
 | Action | Description |
 |--------|-------------|
 | **Click** | Click at specific coordinates or current position |
-| **Type** | Type text with variable substitution ({VARIABLE}) |
+| **Type** | Type text with variable substitution ({batch:column_name}) |
 | **Set Value** | Click, clear, and type in one action |
 | **Delete** | Clear field contents (ctrl+a, backspace, triple-click) |
 | **Scroll** | Scroll by amount or to top/bottom |
@@ -107,44 +107,28 @@ pytesseract==0.3.13
 
 ### Recording a Simulation
 
-1. Launch the application
-2. Click action buttons to record steps
-3. For image-based actions, position mouse and wait for capture
-4. Save simulation to JSON file
+1. Launch the application.
+2. Click action buttons to record steps.
+3. For image-based actions, position the mouse and wait for the capture overlay.
+4. Save the simulation to a JSON file.
 
 ### Playing Back
 
-**Single Variable:**
-1. Load simulation
-2. Click "Play Single"
-3. Enter variable
-4. Watch automation run
-
-**Batch Processing:**
-1. Manage variables (File → Manage Variables)
-2. Add variables to list
-3. Load simulation
-4. Click "Play Batch"
-5. Press ESC to stop anytime
+1. Load a simulation.
+2. If your workflow uses batch variables (e.g., `{batch:column_name}`), go to **Edit > Manage Variables** to add your data. You can also import data from a CSV file.
+3. Click the **Play** button.
+4. The application will automatically detect if your workflow is a batch process and execute it accordingly.
+5. During playback, a small popup will show the progress. You can press **P** to pause/resume or **S** to stop.
 
 ### Variable Substitution
 
-Use `{VARIABLE}` placeholder in Type and Set Value actions:
-- Single play: Replaced with entered variable
-- Batch play: Replaced with each variable from list
+Use the `{batch:column_name}` placeholder in "Type" and "Set Value" actions.
 
-## ⚙️ Configuration
+-   When you select a "Type" or "Set Value" action, the **Properties** panel will show a dropdown with all available column names from your batch data.
+-   Selecting a column from the dropdown will insert the correct placeholder for you.
+-   You can also type static values directly into the input fields.
 
-**config.json:**
-```json
-{
-  "pause_between_actions": 1.0,
-  "typing_interval": 0.1,
-  "scroll_amount": -300,
-  "screenshot_on_error": true,
-  "max_retries": 3
-}
-```
+
 
 ## 🛡️ Safety Features
 
@@ -178,7 +162,7 @@ class ModernTheme:
 
 ### Add Custom Actions
 
-1. Define dataclass in `src/actions.py`
+1. Define dataclass in `src/action_schema.py`
 2. Add recorder method in `src/recorder.py`
 3. Add executor method in `src/executor.py`
 4. Wire up in main application
@@ -245,7 +229,7 @@ This project is for automation and productivity purposes. Use at your own discre
 For questions or issues:
 1. Check documentation files
 2. Review inline code comments
-3. Check `simulation_gui.log` for errors
+3. Check `automation_studio.log` for errors
 4. Consult `DEVELOPER_GUIDE.md` for examples
 
 ---

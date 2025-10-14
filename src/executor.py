@@ -4,6 +4,7 @@ Simulation execution engine
 import pyautogui
 import time
 import logging
+import copy
 from typing import List, Dict, Any, Optional, Callable
 
 
@@ -48,14 +49,16 @@ class SimulationExecutor:
             self.status_callback(message)
         # Don't log here - let the callback handler do it to avoid duplicate logs
 
-    def execute_action(self, action: Dict[str, Any], variable: str = ""):
+    def execute_action(self, action: Dict[str, Any], row_data: Dict[str, Any] = None):
         """
         Execute a single action
 
         Args:
             action: Action dictionary
-            variable: Variable value for substitution
+            row_data: A dictionary representing a row of data for substitution.
         """
+        if row_data is None:
+            row_data = {}
         action_type = action['type']
 
         if action_type == 'click':
@@ -63,11 +66,11 @@ class SimulationExecutor:
         elif action_type == 'delete':
             self._execute_delete(action)
         elif action_type == 'type':
-            self._execute_type(action, variable)
+            self._execute_type(action, row_data)
         elif action_type == 'key_press':
             self._execute_key_press(action)
         elif action_type == 'set_value':
-            self._execute_set_value(action, variable)
+            self._execute_set_value(action, row_data)
         elif action_type == 'scroll':
             self._execute_scroll(action)
         elif action_type == 'wait':
@@ -104,9 +107,19 @@ class SimulationExecutor:
             time.sleep(0.2)
             pyautogui.press('delete')
 
-    def _execute_type(self, action: Dict[str, Any], sku: str):
+    def _replace_placeholders(self, text: str, row_data: Dict[str, Any]) -> str:
+        """Replace placeholders in a string with data from a row."""
+        import re
+        
+        def replace_match(match):
+            column_name = match.group(1)
+            return str(row_data.get(column_name, match.group(0)))
+
+        return re.sub(r'{batch:(\w+)}', replace_match, text)
+
+    def _execute_type(self, action: Dict[str, Any], row_data: Dict[str, Any]):
         """Execute type action"""
-        text = action['text'].replace('{VARIABLE}', sku).replace('{SKU}', sku)
+        text = self._replace_placeholders(action['text'], row_data)
         interval = action.get('interval', 0.1)
         pyautogui.write(text, interval=interval)
 
@@ -116,7 +129,7 @@ class SimulationExecutor:
         pyautogui.press(key)
         logging.info(f"Pressed key: {key}")
 
-    def _execute_set_value(self, action: Dict[str, Any], sku: str):
+    def _execute_set_value(self, action: Dict[str, Any], row_data: Dict[str, Any]):
         """Execute set_value action (click + delete + type)"""
         # Click
         if action.get('use_current_position', False):
@@ -140,7 +153,7 @@ class SimulationExecutor:
         time.sleep(0.3)
 
         # Type new value
-        value = action['value'].replace('{VARIABLE}', sku).replace('{SKU}', sku)
+        value = self._replace_placeholders(action['value'], row_data)
         pyautogui.write(value, interval=0.1)
 
     def _execute_scroll(self, action: Dict[str, Any]):
@@ -233,8 +246,10 @@ class SimulationExecutor:
         elif direction == 'right':
             pyautogui.moveTo(current_pos.x + distance, current_pos.y)
 
-    def _get_action_details(self, action: Dict[str, Any]) -> str:
+    def _get_action_details(self, action: Dict[str, Any], row_data: Dict[str, Any] = None) -> str:
         """Get formatted details string for an action"""
+        if row_data is None:
+            row_data = {}
         action_type = action['type']
 
         if action_type == 'click':
@@ -243,7 +258,7 @@ class SimulationExecutor:
             return f"at ({action.get('x')}, {action.get('y')})"
 
         elif action_type == 'type':
-            text = action.get('text', '')
+            text = self._replace_placeholders(action.get('text', ''), row_data)
             return f'"{text[:40]}"'
 
         elif action_type == 'key_press':
@@ -251,7 +266,7 @@ class SimulationExecutor:
             return f"{key.upper()}"
 
         elif action_type == 'set_value':
-            value = action.get('value', '')
+            value = self._replace_placeholders(action.get('value', ''), row_data)
             return f'= "{value[:30]}"'
 
         elif action_type == 'scroll':
@@ -277,20 +292,22 @@ class SimulationExecutor:
 
         return ""
 
-    def execute_simulation(self, actions: List[Dict[str, Any]], sku: str = "") -> bool:
+    def execute_simulation(self, actions: List[Dict[str, Any]], row_data: Dict[str, Any] = None) -> bool:
         """
         Execute complete simulation
 
         Args:
             actions: List of action dictionaries
-            sku: SKU value for substitution (generalized to represent any variable)
+            row_data: A dictionary representing a row of data for substitution.
 
         Returns:
             True if completed successfully, False if stopped
         """
+        if row_data is None:
+            row_data = {}
         try:
             logging.info(f"Executor received {len(actions)} actions to execute")
-            self.update_status(f"Playing simulation for: {sku} (Press S to stop, P to pause)")
+            self.update_status(f"Playing simulation... (Press S to stop, P to pause)")
 
             for i, action in enumerate(actions, 1):
                 logging.info(f"Processing action {i}/{len(actions)}: {action['type']}")
@@ -314,29 +331,36 @@ class SimulationExecutor:
 
                 # Update progress callback if provided
                 if self.progress_callback:
-                    details = action.get('description', '') or self._get_action_details(action)
-                    self.progress_callback(i, len(actions), action['type'], details)
+                    current_action_details = self._get_action_details(action, row_data)
+                    next_action_details = ""
+                    if i < len(actions):
+                        next_action_details = self._get_action_details(actions[i], row_data)
+                    
+                    self.progress_callback(
+                        f"Step {i}/{len(actions)}: {action['type'].upper()} {current_action_details}",
+                        f"Next: {actions[i]['type'].upper()} {next_action_details}" if i < len(actions) else "Finish"
+                    )
 
                 logging.info(f"Executing action {i}: {action['type']}")
-                self.execute_action(action, sku)
+                self.execute_action(action, row_data)
                 logging.info(f"Completed action {i}")
 
-            self.update_status(f"✓ Completed: {sku}")
+            self.update_status(f"✓ Completed")
             return True
 
         except Exception as e:
             self.update_status(f"✗ Error: {str(e)}")
-            logging.error(f"Simulation error for {sku}: {str(e)}")
+            logging.error(f"Simulation error: {str(e)}")
             return False
 
-    def execute_batch(self, actions: List[Dict[str, Any]], skus: List[str],
+    def execute_batch(self, actions: List[Dict[str, Any]], data: List[Dict[str, Any]],
                      delay_between: float = 2.0) -> Dict[str, int]:
         """
-        Execute simulation for multiple items (generalized from SKUs to any variable)
+        Execute simulation for multiple items.
 
         Args:
             actions: List of action dictionaries
-            skus: List of SKU values (generalized to represent any variable)
+            data: List of dictionaries, where each dictionary represents a row of data.
             delay_between: Delay between executions
 
         Returns:
@@ -344,21 +368,21 @@ class SimulationExecutor:
         """
         success_count = 0
 
-        for i, sku in enumerate(skus, 1):
+        for i, row_data in enumerate(data, 1):
             if self.should_stop():
-                self.update_status(f"⏹ Batch stopped at item {i}/{len(skus)}")
+                self.update_status(f"⏹ Batch stopped at item {i}/{len(data)}")
                 return {"success_count": success_count, "total_count": i - 1}
 
-            self.update_status(f"Batch [{i}/{len(skus)}]: {sku}")
+            self.update_status(f"Batch [{i}/{len(data)}]")
 
-            if self.execute_simulation(actions, sku):
+            if self.execute_simulation(copy.deepcopy(actions), row_data):
                 success_count += 1
 
             if self.should_stop():
                 return {"success_count": success_count, "total_count": i}
 
-            if i < len(skus):
+            if i < len(data):
                 time.sleep(delay_between)
 
-        self.update_status(f"✓ Batch complete: {success_count}/{len(skus)} successful")
-        return {"success_count": success_count, "total_count": len(skus)}
+        self.update_status(f"✓ Batch complete: {success_count}/{len(data)} successful")
+        return {"success_count": success_count, "total_count": len(data)}

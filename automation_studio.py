@@ -25,6 +25,9 @@ from src.screenshot_manager import ScreenshotManager
 from src.capture_overlay import CaptureOverlay, CaptureMode, CaptureConfirmDialog
 from src.visual_canvas import VisualCanvas, ActionAnnotation
 from src.action_card import ActionCard
+from src.variable_manager import VariableManagerDialog
+from src.execution_popup import ExecutionPopup
+from pynput import keyboard
 
 # Configure logging
 logging.basicConfig(
@@ -53,6 +56,8 @@ class AutomationStudio:
         self.actions = []  # List of EnhancedAction objects
         self.selected_action_index = None
         self.action_cards = []  # List of ActionCard widgets
+        self.batch_data = []
+        self.batch_columns = []
 
         # Initialize managers
         self.screenshot_manager = ScreenshotManager()
@@ -125,6 +130,8 @@ class AutomationStudio:
         edit_menu.add_separator()
         edit_menu.add_command(label="💬 Add Comment", command=self.add_comment_to_selected,
                              accelerator="Ctrl+M")
+        edit_menu.add_separator()
+        edit_menu.add_command(label="Manage Batch Variables...", command=self.open_variable_manager)
 
         # View menu
         view_menu = tk.Menu(menubar, tearoff=0)
@@ -200,6 +207,16 @@ class AutomationStudio:
         self.status_label = ttk.Label(toolbar, text="Ready",
                                      style='Secondary.TLabel')
         self.status_label.pack(side=tk.RIGHT, padx=10)
+
+    def open_variable_manager(self):
+        """Open the variable manager dialog."""
+        def on_save(data, columns):
+            self.batch_data = data
+            self.batch_columns = columns
+            self.update_status(f"Saved {len(data)} batch rows.")
+
+        dialog = VariableManagerDialog(self.root, self.batch_data, self.batch_columns, on_save=on_save)
+        dialog.wait_window()
 
     def _connect_canvas_controls(self):
         """Connect canvas zoom controls to visual canvas"""
@@ -619,7 +636,8 @@ class AutomationStudio:
             action = self.actions[index]
             self.studio.properties_panel.show_action_properties(
                 action,
-                on_change=lambda prop, val: self._on_property_change(index, prop, val)
+                on_change=lambda prop, val: self._on_property_change(index, prop, val),
+                batch_columns=self.batch_columns
             )
 
         logging.info(f"Selected action {index}")
@@ -824,6 +842,12 @@ class AutomationStudio:
 
                 actions_data = data.get('actions', [])
                 self.actions = [EnhancedAction.from_dict(a) for a in actions_data]
+                self.batch_columns = data.get('batch_columns', [])
+                self.batch_data = data.get('batch_data', [])
+                # For backward compatibility with old format
+                if not self.batch_data and 'batch_variables' in data:
+                    self.batch_columns = ['variable']
+                    self.batch_data = [{'variable': var} for var in data['batch_variables']]
 
                 self._refresh_workflow()
 
@@ -870,11 +894,13 @@ class AutomationStudio:
             try:
                 import json
                 data = {
-                    'version': '2.0',
+                    'version': '2.1',
                     'created': datetime.now().isoformat(),
                     'total_actions': len(self.actions),
                     'actions': [a.to_dict() for a in self.actions],
-                    'comments': self.comment_manager.to_dict()
+                    'comments': self.comment_manager.to_dict(),
+                    'batch_columns': self.batch_columns,
+                    'batch_data': self.batch_data
                 }
 
                 with open(filepath, 'w', encoding='utf-8') as f:
@@ -923,38 +949,71 @@ class AutomationStudio:
                 messagebox.showerror("Error", f"Failed to export:\n{str(e)}")
 
     def play_workflow(self):
-        """Play workflow"""
+        """Play workflow with a transparent popup for status."""
+        from src.executor import SimulationExecutor
         if not self.actions:
-            messagebox.showwarning("No Actions", "No actions to play")
+            messagebox.showwarning("No Actions", "No actions to play.")
             return
 
-        # Export to classic format and use existing executor
-        try:
-            classic_actions = ActionSchemaManager.export_simulation(
-                self.actions, include_visual=False
-            )
+        is_batch = any('{batch:' in str(action.params.get('text', '')) or '{batch:' in str(action.params.get('value', '')) for action in self.actions)
 
-            from src.executor import SimulationExecutor
+        if is_batch and not self.batch_data:
+            messagebox.showwarning("No Batch Data", "Workflow requires batch data. Please add data via 'Edit > Manage Variables'.")
+            return
 
-            def on_complete():
-                self.update_status("Playback complete")
+        # --- Setup for execution ---
+        self.root.withdraw()
+        popup = ExecutionPopup(self.root)
+        popup.show()
 
-            executor = SimulationExecutor(
-                status_callback=lambda msg: self.root.after(0, self.update_status, msg)
-            )
+        stop_execution = False
+        pause_execution = False
 
-            import threading
-            thread = threading.Thread(
-                target=lambda: executor.execute_simulation(classic_actions, "")
-            )
-            thread.daemon = True
-            thread.start()
+        def on_press(key):
+            nonlocal stop_execution, pause_execution
+            try:
+                if key.char == 's':
+                    stop_execution = True
+                elif key.char == 'p':
+                    pause_execution = not pause_execution
+            except AttributeError:
+                pass
 
-            self.update_status("Playing workflow...")
+        listener = keyboard.Listener(on_press=on_press)
+        listener.start()
 
-        except Exception as e:
-            logging.error(f"Playback error: {str(e)}")
-            messagebox.showerror("Error", f"Playback failed:\n{str(e)}")
+        def stop_callback():
+            return stop_execution
+
+        def pause_callback():
+            return pause_execution
+
+        def progress_callback(current_step, next_step):
+            self.root.after(0, popup.update_progress, current_step, next_step)
+
+        executor = SimulationExecutor(
+            stop_callback=stop_callback,
+            pause_callback=pause_callback,
+            status_callback=lambda msg: self.root.after(0, self.update_status, msg),
+            progress_callback=progress_callback
+        )
+
+        def execution_target():
+            try:
+                classic_actions = ActionSchemaManager.export_simulation(self.actions, include_visual=False)
+                if is_batch:
+                    executor.execute_batch(classic_actions, self.batch_data)
+                else:
+                    executor.execute_simulation(classic_actions)
+            finally:
+                listener.stop()
+                self.root.after(0, popup.destroy)
+                self.root.after(0, self.root.deiconify)
+
+        import threading
+        thread = threading.Thread(target=execution_target)
+        thread.daemon = True
+        thread.start()
 
     def start_recording(self):
         """Start recording mode"""

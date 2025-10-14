@@ -417,7 +417,7 @@ class PropertiesPanel(ResizablePane):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-    def show_action_properties(self, action, on_change=None):
+    def show_action_properties(self, action, on_change=None, batch_columns=None):
         """Show properties for an action"""
         from src.property_editor import ActionPropertyPanel
 
@@ -443,7 +443,7 @@ class PropertiesPanel(ResizablePane):
         badge.pack()
 
         # Create property panel
-        ActionPropertyPanel(self.content_frame, action, on_change=on_change)
+        ActionPropertyPanel(self.content_frame, action, on_change=on_change, batch_columns=batch_columns)
 
 
 class StudioLayout(ttk.Frame):
