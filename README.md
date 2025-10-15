@@ -1,4 +1,4 @@
-# Automation Studio v2
+# Automation Studio
 
 **Visual automation tool for repetitive GUI tasks across any application**
 
@@ -21,7 +21,7 @@ python automation_studio.py
 - **📦 Batch Processing** - Process multiple variables automatically from a list
 - **💾 Save & Reuse** - Save simulations as JSON files for repeated use
 - **🎨 Professional UI** - Modern, intuitive interface with tree view and status indicators
-- **⚡ Fast & Reliable** - Efficient execution with safety features (ESC to stop)
+- **⚡ Fast & Reliable** - Efficient execution with safety features (S to stop, P to pause/resume)
 - **🔧 Modular Architecture** - Clean, maintainable codebase
 
 ## 📸 Screenshots
@@ -56,9 +56,7 @@ python automation_studio.py
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](CLAUDE.md)** - Architecture overview and technical documentation
 - **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)** - Developer reference and examples
-- **[BUTTON_STYLES_GUIDE.md](BUTTON_STYLES_GUIDE.md)** - UI styling reference
 
 ## 🏗️ Architecture
 

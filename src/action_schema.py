@@ -196,6 +196,10 @@ class EnhancedAction:
 
         elif self.type == 'set_value':
             value = self.params.get('value', '')
+            x = self.params.get('x')
+            y = self.params.get('y')
+            if x is not None and y is not None:
+                return f"Set value at ({x}, {y})"
             return f"Set value: {value[:30]}{'...' if len(value) > 30 else ''}"
 
         elif self.type == 'wait':

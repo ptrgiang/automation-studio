@@ -5,134 +5,72 @@ Context-aware property editing with validation
 import tkinter as tk
 from tkinter import ttk
 from typing import Optional, Callable, Dict, Any, List
-from src.theme import ModernTheme
+from src.theme import ModernTheme, Icons
 from src.action_schema import EnhancedAction
 
 
-class PropertyEditor:
+class PropertyEditor(ttk.Frame):
     """Base class for property editors"""
 
-    def __init__(self, parent, label: str, value: Any, on_change: Optional[Callable] = None):
-        """
-        Initialize property editor
-
-        Args:
-            parent: Parent widget
-            label: Property label
-            value: Current value
-            on_change: Callback when value changes (value)
-        """
-        self.parent = parent
+    def __init__(self, parent, label: str, on_change: Optional[Callable] = None):
+        super().__init__(parent, style='TFrame')
         self.label = label
-        self.value = value
         self.on_change = on_change
 
-        # Create container
-        self.frame = ttk.Frame(parent, style='Panel.TFrame')
-        self.frame.pack(fill=tk.X, pady=5)
+        self.pack(fill=tk.X, pady=ModernTheme.PADDING_MD)
 
-        # Create label
-        label_widget = ttk.Label(self.frame, text=label,
-                                style='TLabel',
-                                font=(ModernTheme.FONT_FAMILY, 10, 'bold'))
-        label_widget.pack(anchor=tk.W, pady=(0, 2))
-
-    def get_value(self) -> Any:
-        """Get current value"""
-        return self.value
-
-    def set_value(self, value: Any):
-        """Set value programmatically"""
-        self.value = value
+        if label:
+            label_widget = ttk.Label(self, text=label, style='TLabel', font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD, 'bold'))
+            label_widget.pack(anchor=tk.W, pady=(0, ModernTheme.PADDING_SM))
 
     def _trigger_change(self, value: Any):
-        """Trigger change callback"""
-        self.value = value
         if self.on_change:
             self.on_change(value)
 
 
 class TextPropertyEditor(PropertyEditor):
-    """Text input property editor"""
-
-    def __init__(self, parent, label: str, value: str, on_change: Optional[Callable] = None,
-                 placeholder: str = ""):
-        super().__init__(parent, label, value, on_change)
-
-        # Create entry
-        self.entry = ttk.Entry(self.frame, font=(ModernTheme.FONT_FAMILY, 10))
-        self.entry.pack(fill=tk.X, pady=(0, 2))
+    def __init__(self, parent, label: str, value: str, on_change: Optional[Callable] = None):
+        super().__init__(parent, label, on_change)
+        self.entry = ttk.Entry(self, font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD))
+        self.entry.pack(fill=tk.X)
         self.entry.insert(0, str(value) if value else "")
-
-        # Bind change event
         self.entry.bind('<KeyRelease>', lambda e: self._trigger_change(self.entry.get()))
-
-    def get_value(self) -> str:
-        return self.entry.get()
-
-    def set_value(self, value: str):
-        self.entry.delete(0, tk.END)
-        self.entry.insert(0, str(value) if value else "")
-        self.value = value
 
 
 class HybridTextPropertyEditor(PropertyEditor):
-    """Text input with a dropdown for batch column selection."""
-
     def __init__(self, parent, label: str, value: str, batch_columns: List[str], on_change: Optional[Callable] = None):
-        super().__init__(parent, label, value, on_change)
-
+        super().__init__(parent, label, on_change)
         self.batch_columns = batch_columns
-        
-        editor_frame = ttk.Frame(self.frame)
+
+        editor_frame = ttk.Frame(self)
         editor_frame.pack(fill=tk.X)
 
-        self.entry = ttk.Entry(editor_frame, font=(ModernTheme.FONT_FAMILY, 10))
+        self.entry = ttk.Entry(editor_frame, font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD))
         self.entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.entry.insert(0, str(value) if value else "")
         self.entry.bind('<KeyRelease>', lambda e: self._trigger_change(self.entry.get()))
 
         if self.batch_columns:
             self.combobox = ttk.Combobox(editor_frame, values=self.batch_columns, state='readonly', width=15)
-            self.combobox.pack(side=tk.LEFT, padx=(5, 0))
-            self.combobox.set("Select Column...")
+            self.combobox.pack(side=tk.LEFT, padx=(ModernTheme.PADDING_SM, 0))
+            self.combobox.set("Insert Column...")
             self.combobox.bind('<<ComboboxSelected>>', self._on_column_select)
 
     def _on_column_select(self, event):
         selected_column = self.combobox.get()
         if selected_column:
             placeholder = f"{{batch:{selected_column}}}"
-            self.set_value(placeholder)
+            self.entry.delete(0, tk.END)
+            self.entry.insert(0, placeholder)
             self._trigger_change(placeholder)
-
-    def get_value(self) -> str:
-        return self.entry.get()
-
-    def set_value(self, value: str):
-        self.entry.delete(0, tk.END)
-        self.entry.insert(0, str(value) if value else "")
-        self.value = value
 
 
 class NumberPropertyEditor(PropertyEditor):
-    """Numeric input property editor with validation"""
-
-    def __init__(self, parent, label: str, value: float, on_change: Optional[Callable] = None,
-                 min_val: Optional[float] = None, max_val: Optional[float] = None):
-        super().__init__(parent, label, value, on_change)
-
-        self.min_val = min_val
-        self.max_val = max_val
-
-        # Create spinbox
-        self.spinbox = ttk.Spinbox(self.frame,
-                                   from_=min_val if min_val is not None else -999999,
-                                   to=max_val if max_val is not None else 999999,
-                                   font=(ModernTheme.FONT_FAMILY, 10))
-        self.spinbox.pack(fill=tk.X, pady=(0, 2))
+    def __init__(self, parent, label: str, value: float, on_change: Optional[Callable] = None, min_val: Optional[float] = None, max_val: Optional[float] = None):
+        super().__init__(parent, label, on_change)
+        self.spinbox = ttk.Spinbox(self, from_=min_val if min_val is not None else -999999, to=max_val if max_val is not None else 999999, font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD))
+        self.spinbox.pack(fill=tk.X)
         self.spinbox.set(str(value) if value is not None else "0")
-
-        # Bind change event
         self.spinbox.bind('<KeyRelease>', self._on_change)
         self.spinbox.bind('<<Increment>>', self._on_change)
         self.spinbox.bind('<<Decrement>>', self._on_change)
@@ -140,119 +78,53 @@ class NumberPropertyEditor(PropertyEditor):
     def _on_change(self, event=None):
         try:
             val = float(self.spinbox.get())
-            # Apply constraints
-            if self.min_val is not None:
-                val = max(self.min_val, val)
-            if self.max_val is not None:
-                val = min(self.max_val, val)
             self._trigger_change(val)
         except ValueError:
-            pass  # Invalid input, ignore
-
-    def get_value(self) -> float:
-        try:
-            return float(self.spinbox.get())
-        except ValueError:
-            return 0.0
-
-    def set_value(self, value: float):
-        self.spinbox.set(str(value))
-        self.value = value
+            pass
 
 
 class ChoicePropertyEditor(PropertyEditor):
-    """Choice/dropdown property editor"""
-
-    def __init__(self, parent, label: str, value: str, choices: List[str],
-                 on_change: Optional[Callable] = None):
-        super().__init__(parent, label, value, on_change)
-
+    def __init__(self, parent, label: str, value: str, choices: List[str], on_change: Optional[Callable] = None):
+        super().__init__(parent, label, on_change)
         self.choices = choices
-
-        # Create combobox
-        self.combobox = ttk.Combobox(self.frame, values=choices, state='readonly',
-                                     font=(ModernTheme.FONT_FAMILY, 10))
-        self.combobox.pack(fill=tk.X, pady=(0, 2))
-
+        self.combobox = ttk.Combobox(self, values=choices, state='readonly', font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD))
+        self.combobox.pack(fill=tk.X)
         if value in choices:
             self.combobox.set(value)
         elif choices:
             self.combobox.set(choices[0])
-
-        # Bind change event
         self.combobox.bind('<<ComboboxSelected>>', lambda e: self._trigger_change(self.combobox.get()))
-
-    def get_value(self) -> str:
-        return self.combobox.get()
-
-    def set_value(self, value: str):
-        if value in self.choices:
-            self.combobox.set(value)
-            self.value = value
 
 
 class BooleanPropertyEditor(PropertyEditor):
-    """Boolean checkbox property editor"""
-
     def __init__(self, parent, label: str, value: bool, on_change: Optional[Callable] = None):
-        # Don't call super().__init__ for boolean, we'll create custom layout
-        self.parent = parent
-        self.label = label
-        self.value = value
-        self.on_change = on_change
-
-        # Create container
-        self.frame = ttk.Frame(parent, style='Panel.TFrame')
-        self.frame.pack(fill=tk.X, pady=5)
-
-        # Create checkbox with label
+        super().__init__(parent, "", on_change)
         self.var = tk.BooleanVar(value=value)
-        self.checkbox = ttk.Checkbutton(self.frame, text=label, variable=self.var,
-                                       command=self._on_toggle,
-                                       style='TCheckbutton')
+        self.checkbox = ttk.Checkbutton(self, text=label, variable=self.var, command=self._on_toggle, style='TCheckbutton')
         self.checkbox.pack(anchor=tk.W)
 
     def _on_toggle(self):
         self._trigger_change(self.var.get())
 
-    def get_value(self) -> bool:
-        return self.var.get()
-
-    def set_value(self, value: bool):
-        self.var.set(value)
-        self.value = value
-
 
 class CoordinatePropertyEditor(PropertyEditor):
-    """Coordinate (x, y) property editor"""
-
     def __init__(self, parent, label: str, x: int, y: int, on_change: Optional[Callable] = None):
-        super().__init__(parent, label, (x, y), on_change)
+        super().__init__(parent, label, on_change)
+        coord_frame = ttk.Frame(self, style='TFrame')
+        coord_frame.pack(fill=tk.X)
 
-        # Create coordinate inputs
-        coord_frame = ttk.Frame(self.frame, style='Panel.TFrame')
-        coord_frame.pack(fill=tk.X, pady=(0, 2))
-
-        # X coordinate
-        x_frame = ttk.Frame(coord_frame, style='Panel.TFrame')
-        x_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
-
-        ttk.Label(x_frame, text="X:", style='Secondary.TLabel',
-                 font=(ModernTheme.FONT_FAMILY, 9)).pack(side=tk.LEFT, padx=(0, 2))
-
-        self.x_entry = ttk.Entry(x_frame, font=(ModernTheme.FONT_FAMILY, 10), width=10)
+        x_frame = ttk.Frame(coord_frame, style='TFrame')
+        x_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, ModernTheme.PADDING_SM))
+        ttk.Label(x_frame, text="X:", style='Secondary.TLabel').pack(side=tk.LEFT)
+        self.x_entry = ttk.Entry(x_frame, font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD), width=8)
         self.x_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.x_entry.insert(0, str(x))
         self.x_entry.bind('<KeyRelease>', self._on_change)
 
-        # Y coordinate
-        y_frame = ttk.Frame(coord_frame, style='Panel.TFrame')
+        y_frame = ttk.Frame(coord_frame, style='TFrame')
         y_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
-
-        ttk.Label(y_frame, text="Y:", style='Secondary.TLabel',
-                 font=(ModernTheme.FONT_FAMILY, 9)).pack(side=tk.LEFT, padx=(0, 2))
-
-        self.y_entry = ttk.Entry(y_frame, font=(ModernTheme.FONT_FAMILY, 10), width=10)
+        ttk.Label(y_frame, text="Y:", style='Secondary.TLabel').pack(side=tk.LEFT)
+        self.y_entry = ttk.Entry(y_frame, font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD), width=8)
         self.y_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.y_entry.insert(0, str(y))
         self.y_entry.bind('<KeyRelease>', self._on_change)
@@ -263,240 +135,123 @@ class CoordinatePropertyEditor(PropertyEditor):
             y = int(self.y_entry.get())
             self._trigger_change((x, y))
         except ValueError:
-            pass  # Invalid input, ignore
+            pass
 
-    def get_value(self) -> tuple:
-        try:
-            return (int(self.x_entry.get()), int(self.y_entry.get()))
-        except ValueError:
-            return (0, 0)
 
-    def set_value(self, value: tuple):
-        x, y = value
-        self.x_entry.delete(0, tk.END)
-        self.x_entry.insert(0, str(x))
-        self.y_entry.delete(0, tk.END)
-        self.y_entry.insert(0, str(y))
-        self.value = value
+class CoordinateDisplayEditor(PropertyEditor):
+    """Read-only coordinate display with recapture button"""
+    def __init__(self, parent, label: str, x: int, y: int, on_recapture: Optional[Callable] = None):
+        super().__init__(parent, label, None)
+        self.on_recapture = on_recapture
+
+        # Display frame
+        display_frame = ttk.Frame(self, style='TFrame')
+        display_frame.pack(fill=tk.X)
+
+        # Coordinates display (read-only)
+        info_frame = ttk.Frame(display_frame, style='TFrame')
+        info_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.coord_label = ttk.Label(info_frame, text=f"X: {x}, Y: {y}",
+                                     style='TLabel',
+                                     font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD))
+        self.coord_label.pack(anchor=tk.W)
+
+        # Recapture button
+        recapture_btn = ttk.Button(display_frame, text="📍 Recapture",
+                                   style='Outline.TButton',
+                                   command=self._on_recapture_click)
+        recapture_btn.pack(side=tk.RIGHT, padx=(ModernTheme.PADDING_SM, 0))
+
+    def _on_recapture_click(self):
+        if self.on_recapture:
+            self.on_recapture()
+
+    def update_coordinates(self, x: int, y: int):
+        """Update displayed coordinates"""
+        self.coord_label.config(text=f"X: {x}, Y: {y}")
 
 
 class MultilineTextPropertyEditor(PropertyEditor):
-    """Multiline text property editor"""
-
-    def __init__(self, parent, label: str, value: str, on_change: Optional[Callable] = None,
-                 height: int = 4):
-        super().__init__(parent, label, value, on_change)
-
-        # Create text widget
-        self.text = tk.Text(self.frame, font=(ModernTheme.FONT_FAMILY, 10),
-                           height=height, wrap=tk.WORD,
-                           bg=ModernTheme.SURFACE, fg=ModernTheme.TEXT,
-                           relief=tk.SOLID, borderwidth=1)
-        self.text.pack(fill=tk.BOTH, pady=(0, 2))
+    def __init__(self, parent, label: str, value: str, on_change: Optional[Callable] = None, height: int = 4):
+        super().__init__(parent, label, on_change)
+        self.text = tk.Text(self, font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD), height=height, wrap=tk.WORD, relief=tk.SOLID, borderwidth=1, highlightthickness=1, highlightcolor=ModernTheme.RING)
+        self.text.pack(fill=tk.BOTH, expand=True)
         self.text.insert('1.0', str(value) if value else "")
-
-        # Bind change event
         self.text.bind('<KeyRelease>', lambda e: self._trigger_change(self.text.get('1.0', 'end-1c')))
 
-    def get_value(self) -> str:
-        return self.text.get('1.0', 'end-1c')
 
-    def set_value(self, value: str):
-        self.text.delete('1.0', tk.END)
-        self.text.insert('1.0', str(value) if value else "")
-        self.value = value
-
-
-class ActionPropertyPanel:
-    """Complete property panel for an action"""
-
-    def __init__(self, parent, action: EnhancedAction, on_change: Optional[Callable] = None, batch_columns: List[str] = None):
-        """
-        Initialize action property panel
-
-        Args:
-            parent: Parent widget
-            action: EnhancedAction object
-            on_change: Callback when any property changes (property_name, value)
-            batch_columns: List of column names for batch data.
-        """
-        self.parent = parent
+class ActionPropertyPanel(ttk.Frame):
+    def __init__(self, parent, action: EnhancedAction, on_change: Optional[Callable] = None,
+                 batch_columns: List[str] = None, on_recapture: Optional[Callable] = None):
+        super().__init__(parent, style='TFrame')
+        self.pack(fill=tk.BOTH, expand=True)
         self.action = action
         self.on_change = on_change
-        self.editors = {}
+        self.on_recapture = on_recapture
         self.batch_columns = batch_columns if batch_columns is not None else []
 
-        # Create property editors based on action type
         self._create_common_properties()
         self._create_type_specific_properties()
 
     def _create_common_properties(self):
-        """Create common properties for all actions"""
-        # Enabled checkbox
-        enabled_editor = BooleanPropertyEditor(
-            self.parent, "Enabled", self.action.enabled,
-            on_change=lambda v: self._on_property_change('enabled', v)
-        )
-        self.editors['enabled'] = enabled_editor
-
-        # Add separator
-        separator = ttk.Separator(self.parent, orient=tk.HORIZONTAL)
-        separator.pack(fill=tk.X, pady=10)
-
-        # Description
-        desc_editor = MultilineTextPropertyEditor(
-            self.parent, "Description",
-            self.action.params.get('description', ''),
-            on_change=lambda v: self._on_property_change('description', v),
-            height=3
-        )
-        self.editors['description'] = desc_editor
-
-        # Add separator
-        separator = ttk.Separator(self.parent, orient=tk.HORIZONTAL)
-        separator.pack(fill=tk.X, pady=10)
+        BooleanPropertyEditor(self, "Enabled", self.action.enabled, on_change=lambda v: self._on_property_change('enabled', v))
+        ttk.Separator(self, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=ModernTheme.PADDING_MD)
+        MultilineTextPropertyEditor(self, "Description", self.action.params.get('description', ''), on_change=lambda v: self._on_property_change('description', v), height=3)
+        ttk.Separator(self, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=ModernTheme.PADDING_MD)
 
     def _create_type_specific_properties(self):
-        """Create properties specific to action type"""
         action_type = self.action.type
         params = self.action.params
 
-        if action_type in ['click', 'move_mouse']:
-            # Coordinates
-            x = params.get('x', 0)
-            y = params.get('y', 0)
-            coord_editor = CoordinatePropertyEditor(
-                self.parent, "Position", x, y,
-                on_change=lambda v: self._on_coords_change(v)
-            )
-            self.editors['coordinates'] = coord_editor
+        if action_type == 'click':
+            CoordinateDisplayEditor(self, "Position", params.get('x', 0), params.get('y', 0),
+                                  on_recapture=lambda: self._on_recapture_position())
+
+        if action_type == 'move_mouse':
+            CoordinatePropertyEditor(self, "Position", params.get('x', 0), params.get('y', 0), on_change=lambda v: self._on_coords_change(v))
 
         if action_type == 'type':
-            # Text to type
-            text_editor = HybridTextPropertyEditor(
-                self.parent, "Text to Type",
-                params.get('text', ''),
-                self.batch_columns,
-                on_change=lambda v: self._on_property_change('text', v)
-            )
-            self.editors['text'] = text_editor
+            HybridTextPropertyEditor(self, "Text to Type", params.get('text', ''), self.batch_columns, on_change=lambda v: self._on_property_change('text', v))
 
         if action_type == 'set_value':
-            # Value and coordinates
-            x = params.get('x', 0)
-            y = params.get('y', 0)
-            coord_editor = CoordinatePropertyEditor(
-                self.parent, "Position", x, y,
-                on_change=lambda v: self._on_coords_change(v)
-            )
-            self.editors['coordinates'] = coord_editor
-
-            value_editor = HybridTextPropertyEditor(
-                self.parent, "Value",
-                params.get('value', ''),
-                self.batch_columns,
-                on_change=lambda v: self._on_property_change('value', v)
-            )
-            self.editors['value'] = value_editor
-
-            # Clear method
-            method_editor = ChoicePropertyEditor(
-                self.parent, "Clear Method",
-                params.get('method', 'ctrl_a'),
-                ['ctrl_a', 'backspace', 'triple_click'],
-                on_change=lambda v: self._on_property_change('method', v)
-            )
-            self.editors['method'] = method_editor
+            CoordinateDisplayEditor(self, "Position", params.get('x', 0), params.get('y', 0),
+                                  on_recapture=lambda: self._on_recapture_position())
+            HybridTextPropertyEditor(self, "Value", params.get('value', ''), self.batch_columns, on_change=lambda v: self._on_property_change('value', v))
+            ChoicePropertyEditor(self, "Clear Method", params.get('method', 'ctrl_a'), ['ctrl_a', 'backspace', 'triple_click'], on_change=lambda v: self._on_property_change('method', v))
 
         if action_type == 'wait':
-            # Wait type and duration
             wait_type = params.get('wait_type', 'duration')
-            wait_type_editor = ChoicePropertyEditor(
-                self.parent, "Wait Type", wait_type,
-                ['duration', 'image'],
-                on_change=lambda v: self._on_property_change('wait_type', v)
-            )
-            self.editors['wait_type'] = wait_type_editor
-
+            ChoicePropertyEditor(self, "Wait Type", wait_type, ['duration', 'image'], on_change=lambda v: self._on_property_change('wait_type', v))
             if wait_type == 'duration':
-                duration_editor = NumberPropertyEditor(
-                    self.parent, "Duration (seconds)",
-                    params.get('duration', 1.0),
-                    on_change=lambda v: self._on_property_change('duration', v),
-                    min_val=0.1, max_val=300.0
-                )
-                self.editors['duration'] = duration_editor
+                NumberPropertyEditor(self, "Duration (s)", params.get('duration', 1.0), on_change=lambda v: self._on_property_change('duration', v), min_val=0.1, max_val=300.0)
 
         if action_type == 'scroll':
-            # Scroll type and amount
             scroll_type = params.get('scroll_type', 'amount')
-            scroll_type_editor = ChoicePropertyEditor(
-                self.parent, "Scroll Type", scroll_type,
-                ['amount', 'top', 'bottom'],
-                on_change=lambda v: self._on_property_change('scroll_type', v)
-            )
-            self.editors['scroll_type'] = scroll_type_editor
-
+            ChoicePropertyEditor(self, "Scroll Type", scroll_type, ['amount', 'top', 'bottom'], on_change=lambda v: self._on_property_change('scroll_type', v))
             if scroll_type == 'amount':
-                amount_editor = NumberPropertyEditor(
-                    self.parent, "Amount (negative = down)",
-                    params.get('amount', -300),
-                    on_change=lambda v: self._on_property_change('amount', int(v)),
-                    min_val=-5000, max_val=5000
-                )
-                self.editors['amount'] = amount_editor
+                NumberPropertyEditor(self, "Amount", params.get('amount', -300), on_change=lambda v: self._on_property_change('amount', int(v)), min_val=-5000, max_val=5000)
 
         if action_type == 'find_image':
-            # Image name and confidence
-            image_name_editor = TextPropertyEditor(
-                self.parent, "Image Name",
-                params.get('image_name', ''),
-                on_change=lambda v: self._on_property_change('image_name', v)
-            )
-            self.editors['image_name'] = image_name_editor
-
-            confidence_editor = NumberPropertyEditor(
-                self.parent, "Confidence (0.0 - 1.0)",
-                params.get('confidence', 0.8),
-                on_change=lambda v: self._on_property_change('confidence', v),
-                min_val=0.1, max_val=1.0
-            )
-            self.editors['confidence'] = confidence_editor
+            TextPropertyEditor(self, "Image Name", params.get('image_name', ''), on_change=lambda v: self._on_property_change('image_name', v))
+            NumberPropertyEditor(self, "Confidence", params.get('confidence', 0.8), on_change=lambda v: self._on_property_change('confidence', v), min_val=0.1, max_val=1.0)
 
         if action_type == 'delete':
-            # Delete method
-            method_editor = ChoicePropertyEditor(
-                self.parent, "Delete Method",
-                params.get('method', 'ctrl_a'),
-                ['ctrl_a', 'backspace', 'triple_click'],
-                on_change=lambda v: self._on_property_change('method', v)
-            )
-            self.editors['method'] = method_editor
+            ChoicePropertyEditor(self, "Delete Method", params.get('method', 'ctrl_a'), ['ctrl_a', 'backspace', 'triple_click'], on_change=lambda v: self._on_property_change('method', v))
 
     def _on_coords_change(self, coords: tuple):
-        """Handle coordinate change"""
         x, y = coords
         self._on_property_change('x', x)
         self._on_property_change('y', y)
 
-    def _on_property_change(self, property_name: str, value: Any):
-        """Handle property change"""
-        # Update action
-        if property_name == 'enabled':
-            self.action.enabled = value
-        else:
-            self.action.params[property_name] = value
+    def _on_recapture_position(self):
+        """Trigger position recapture callback"""
+        if self.on_recapture:
+            self.on_recapture()
 
-        # Trigger callback
+    def _on_property_change(self, property_name: str, value: Any):
         if self.on_change:
             self.on_change(property_name, value)
-
-    def get_all_values(self) -> Dict[str, Any]:
-        """Get all current property values"""
-        values = {}
-        for name, editor in self.editors.items():
-            values[name] = editor.get_value()
-        return values
 
 
 # Test code

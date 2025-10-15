@@ -3,321 +3,79 @@ Modern theme and styling for Amazon Simulator
 """
 import tkinter as tk
 from tkinter import ttk
+from src.theme_shadcn import ShadcnTheme
 
-
-class ModernTheme:
-    """Modern color scheme and styling"""
-
-    # Color palette - Coffee/Beige theme based on provided CSS
-    PRIMARY = "#644a40"          # Coffee brown
-    PRIMARY_DARK = "#503a32"     # Darker coffee brown
-    PRIMARY_LIGHT = "#7a5e54"    # Lighter coffee brown
-
-    SECONDARY = "#ffdfb5"        # Light beige
-    SECONDARY_DARK = "#e8c9a0"   # Darker beige
-    SECONDARY_LIGHT = "#ffe6c4"  # Lighter beige
-
-    SUCCESS = "#644a40"          # Coffee brown (same as primary)
-    WARNING = "#e8e8e8"          # Light gray
-    ERROR = "#e54d2e"            # Red
-    INFO = "#644a40"             # Coffee brown
-
-    BACKGROUND = "#f9f9f9"       # Light background
-    SURFACE = "#fcfcfc"          # Light white surface
-    SURFACE_DARK = "#f7f7f7"     # Slightly darker surface
-
-    TEXT = "#202020"             # Dark gray text
-    TEXT_SECONDARY = "#646464"   # Medium gray text
-    TEXT_LIGHT = "#b4b4b4"       # Light gray text
-
-    BORDER = "#d8d8d8"           # Light border
-    BORDER_DARK = "#c0c0c0"      # Darker border
-    
-    # Additional colors
-    PRIMARY_FG = "#ffffff"       # White text on primary
-    SECONDARY_FG = "#582d1d"     # Dark brown text on secondary
-    ERROR_FG = "#ffffff"         # White text on error
-
-    # Fonts
-    FONT_FAMILY = "Segoe UI"
-    FONT_SIZE_SMALL = 9
-    FONT_SIZE_NORMAL = 10
-    FONT_SIZE_LARGE = 12
-    FONT_SIZE_TITLE = 16
-    FONT_SIZE_HEADING = 14
+class ModernTheme(ShadcnTheme):
+    """Modern professional theme for UI components"""
 
     @staticmethod
     def configure_style():
-        """Configure ttk styles for modern appearance"""
+        """Configure ttk styles for a modern look"""
         style = ttk.Style()
-
-        # Use 'clam' theme as base for better customization
         style.theme_use('clam')
 
-        # Configure TFrame
-        style.configure('TFrame',
-                       background=ModernTheme.BACKGROUND)
+        # General widget styling
+        style.configure('.',
+                        background=ModernTheme.BACKGROUND,
+                        foreground=ModernTheme.FOREGROUND,
+                        font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD),
+                        borderwidth=0,
+                        focuscolor=ModernTheme.RING)
 
-        style.configure('Card.TFrame',
-                       background=ModernTheme.SURFACE,
-                       relief='flat',
-                       borderwidth=1)
+        # Frame and LabelFrame
+        style.configure('TFrame', background=ModernTheme.BACKGROUND)
+        style.configure('TLabelFrame', background=ModernTheme.BACKGROUND, borderwidth=1, relief="solid")
+        style.configure('TLabelFrame.Label', foreground=ModernTheme.MUTED_FOREGROUND, background=ModernTheme.BACKGROUND)
 
-        style.configure('Dragging.Card.TFrame',
-                       background=ModernTheme.SURFACE,
-                       relief='raised',
-                       borderwidth=2)
+        # Button
+        style.configure('TButton', padding=ModernTheme.PADDING_MD, borderwidth=1, relief="solid")
+        style.map('TButton', background=[('active', ModernTheme.MUTED)])
 
-        style.configure('Selected.Card.TFrame',
-                       background='#fffef8',  # Slightly brighter
-                       relief='raised',
-                       borderwidth=3)
+        # Primary Button
+        style.configure('Primary.TButton', background=ModernTheme.PRIMARY, foreground=ModernTheme.PRIMARY_FOREGROUND)
+        style.map('Primary.TButton', background=[('active', ModernTheme.PRIMARY)])
 
-        # Configure TLabel
-        style.configure('TLabel',
-                       background=ModernTheme.BACKGROUND,
-                       foreground=ModernTheme.TEXT,
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL))
+        # Destructive Button
+        style.configure('Destructive.TButton', background=ModernTheme.DESTRUCTIVE, foreground="#ffffff")
+        style.map('Destructive.TButton', background=[('active', ModernTheme.DESTRUCTIVE)])
 
-        style.configure('Title.TLabel',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_TITLE, 'bold'),
-                       foreground=ModernTheme.PRIMARY)
+        # Outline Button
+        style.configure('Outline.TButton', background=ModernTheme.BACKGROUND, foreground=ModernTheme.FOREGROUND)
+        style.map('Outline.TButton', background=[('active', ModernTheme.MUTED)])
 
-        style.configure('Heading.TLabel',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_HEADING, 'bold'),
-                       foreground=ModernTheme.TEXT)
+        # Treeview
+        style.configure('Treeview', rowheight=25, fieldbackground=ModernTheme.BACKGROUND, borderwidth=0)
+        style.configure('Treeview.Heading', font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_MD, 'bold'))
+        style.map('Treeview', background=[('selected', ModernTheme.MUTED)])
 
-        style.configure('Status.TLabel',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_SMALL),
-                       foreground=ModernTheme.TEXT_SECONDARY,
-                       background=ModernTheme.SURFACE_DARK)
+        # Scrollbars
+        style.configure('Vertical.TScrollbar', background=ModernTheme.BACKGROUND, troughcolor=ModernTheme.MUTED)
+        style.configure('Horizontal.TScrollbar', background=ModernTheme.BACKGROUND, troughcolor=ModernTheme.MUTED)
 
-        style.configure('Success.TLabel',
-                       foreground=ModernTheme.SUCCESS)
+        # Card Styles (clean, no borders)
+        style.configure('Card.TFrame', background=ModernTheme.CARD, borderwidth=0, relief='flat')
+        style.configure('Card.TLabel', background=ModernTheme.CARD, foreground=ModernTheme.CARD_FOREGROUND)
 
-        style.configure('Error.TLabel',
-                       foreground=ModernTheme.ERROR)
-
-        # Configure TButton (default style)
-        style.configure('TButton',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL),
-                       background=ModernTheme.PRIMARY,
-                       foreground='white',
-                       borderwidth=0,
-                       relief='flat',
-                       padding=(12, 6))
-
-        style.map('TButton',
-                 background=[('active', ModernTheme.PRIMARY_LIGHT),
-                           ('!active', ModernTheme.PRIMARY)],
-                 foreground=[('active', 'white'),
-                           ('!active', 'white')])
-
-        # Primary button (explicit style)
-        style.configure('Primary.TButton',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL),
-                       background=ModernTheme.PRIMARY,
-                       foreground='white',
-                       borderwidth=0,
-                       padding=(12, 6))
-
-        style.map('Primary.TButton',
-                 background=[('active', ModernTheme.PRIMARY_LIGHT),
-                           ('!active', ModernTheme.PRIMARY)],
-                 foreground=[('active', 'white'),
-                           ('!active', 'white')])
-
-        # Secondary button
-        style.configure('Secondary.TButton',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL),
-                       background=ModernTheme.SECONDARY,
-                       foreground=ModernTheme.SECONDARY_FG,
-                       borderwidth=0,
-                       padding=(12, 6))
-
-        style.map('Secondary.TButton',
-                 background=[('active', ModernTheme.SECONDARY_DARK),
-                           ('!active', ModernTheme.SECONDARY)],
-                 foreground=[('active', ModernTheme.SECONDARY_FG),
-                           ('!active', ModernTheme.SECONDARY_FG)])
-
-        # Success button
-        style.configure('Success.TButton',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL),
-                       background=ModernTheme.SUCCESS,
-                       foreground='white',
-                       borderwidth=0,
-                       padding=(12, 6))
-
-        style.map('Success.TButton',
-                 background=[('active', ModernTheme.PRIMARY_DARK),
-                           ('!active', ModernTheme.SUCCESS)],
-                 foreground=[('active', 'white'),
-                           ('!active', 'white')])
-
-        # Danger button
-        style.configure('Danger.TButton',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL),
-                       background='#d32f2f',
-                       foreground='white',
-                       borderwidth=0,
-                       padding=(12, 6))
-
-        style.map('Danger.TButton',
-                 background=[('active', '#b71c1c'),
-                           ('!active', '#d32f2f')],
-                 foreground=[('active', 'white'),
-                           ('!active', 'white')])
-
-        # Outline button (white background with colored text and border)
-        style.configure('Outline.TButton',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL),
-                       background=ModernTheme.SURFACE,
-                       foreground=ModernTheme.PRIMARY,
-                       borderwidth=2,
-                       bordercolor=ModernTheme.PRIMARY,
-                       relief='solid',
-                       padding=(12, 6),
-                       lightcolor=ModernTheme.PRIMARY,
-                       darkcolor=ModernTheme.PRIMARY)
-
-        style.map('Outline.TButton',
-                 background=[('active', ModernTheme.SURFACE_DARK),
-                           ('!active', ModernTheme.SURFACE)],
-                 foreground=[('active', ModernTheme.PRIMARY_DARK),
-                           ('!active', ModernTheme.PRIMARY)],
-                 bordercolor=[('active', ModernTheme.PRIMARY_DARK),
-                            ('!active', ModernTheme.PRIMARY)])
-
-        # Small button
-        style.configure('Small.TButton',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_SMALL),
-                       background=ModernTheme.PRIMARY,
-                       foreground='white',
-                       borderwidth=0,
-                       padding=(8, 4))
-
-        style.map('Small.TButton',
-                 background=[('active', ModernTheme.PRIMARY_LIGHT),
-                           ('!active', ModernTheme.PRIMARY)],
-                 foreground=[('active', 'white'),
-                           ('!active', 'white')])
-
-        # Configure TLabelFrame
-        style.configure('TLabelframe',
-                       background=ModernTheme.SURFACE,
-                       borderwidth=1,
-                       relief='solid')
-
-        style.configure('TLabelframe.Label',
-                       background=ModernTheme.SURFACE,
-                       foreground=ModernTheme.TEXT,
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL, 'bold'))
-
-        # Configure Treeview
-        style.configure('Treeview',
-                       background=ModernTheme.SURFACE,
-                       foreground=ModernTheme.TEXT,
-                       fieldbackground=ModernTheme.SURFACE,
-                       borderwidth=1,
-                       relief='flat',
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL))
-
-        style.configure('Treeview.Heading',
-                       background=ModernTheme.WARNING,
-                       foreground=ModernTheme.TEXT,
-                       borderwidth=0,
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL, 'bold'))
-
-        style.map('Treeview',
-                 background=[('selected', ModernTheme.SECONDARY)],
-                 foreground=[('selected', ModernTheme.SECONDARY_DARK)])
-
-        # Configure Entry
-        style.configure('TEntry',
-                       fieldbackground=ModernTheme.SURFACE,
-                       foreground=ModernTheme.TEXT,
-                       borderwidth=1,
-                       relief='solid')
-
-        # Configure Checkbutton
-        style.configure('TCheckbutton',
-                       background=ModernTheme.BACKGROUND,
-                       foreground=ModernTheme.TEXT)
-
-        # Configure Progressbar
-        style.configure('TProgressbar',
-                       background=ModernTheme.PRIMARY,
-                       troughcolor=ModernTheme.WARNING,
-                       borderwidth=0,
-                       thickness=20)
-
-        # Configure Notebook
-        style.configure('TNotebook',
-                       background=ModernTheme.BACKGROUND,
-                       borderwidth=0)
-
-        style.configure('TNotebook.Tab',
-                       background=ModernTheme.SURFACE_DARK,
-                       foreground=ModernTheme.TEXT,
-                       padding=(12, 6),
-                       font=(ModernTheme.FONT_FAMILY, ModernTheme.FONT_SIZE_NORMAL))
-
-        style.map('TNotebook.Tab',
-                 background=[('selected', ModernTheme.SURFACE)],
-                 foreground=[('selected', ModernTheme.PRIMARY)])
-
-        return style
-
+        # Disabled Card Style - Properly muted for better appearance
+        style.configure('Disabled.Card.TFrame', background='#f1f5f9', borderwidth=0, relief='flat')  # MUTED background
+        style.configure('Disabled.Card.TLabel', background='#f1f5f9', foreground='#a1a1aa')  # Zinc 400 - more muted gray
 
 class Icons:
-    """Unicode icons for various UI elements"""
-
-    # General
-    CLOSE = "✕"
-    CHECK = "✓"
-    CHECKMARK = "✓"
-    CROSS = "✗"
-    PLUS = "+"
-    MINUS = "−"
-    ELLIPSIS = "⋯"
-
-    # Actions
-    PLAY = "▶"
-    PAUSE = "⏸"
-    STOP = "⏹"
-    RECORD = "⏺"
-    SETTINGS = "⚙"
-
-    # Navigation
-    UP = "▲"
-    DOWN = "▼"
-    LEFT = "◀"
-    RIGHT = "▶"
-
-    # Files
+    """Modern icon set"""
     FOLDER = "📁"
-    FILE = "📄"
     SAVE = "💾"
-    DOWNLOAD = "⬇"
-    UPLOAD = "⬆"
-
-    # Status
-    SUCCESS = "✓"
-    ERROR = "✗"
-    WARNING = "⚠"
-    INFO = "ℹ"
-
-    # Tools
-    EDIT = "✎"
-    DELETE = "🗑"
+    PLAY = "▶️"
+    PLUS = "+"
+    DELETE = "🗑️"
     COPY = "📋"
-    SEARCH = "🔍"
-
-    # Actions types
-    CLICK = "🖱"
-    KEYBOARD = "⌨"
-    IMAGE = "🖼"
-    TIME = "⏱"
-    MOUSE = "🖱"
-    SCROLL = "📜"
+    COMMENT = "💬"
+    VARIABLE = "x"
+    INFO = "ℹ️"
+    CHECK = "✔️"
+    CROSS = "❌"
+    KEYBOARD = "⌨️"
+    MOUSE = "🖱️"
+    SCROLL = "↕️"
+    EDIT = "✏️"
+    TIME = "⏱️"
+    IMAGE = "🖼️"
