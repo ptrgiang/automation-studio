@@ -215,14 +215,14 @@ class RecordingControlPanel:
         # Title
         title = tk.Label(self.frame, text="Recording Controls",
                         font=(ModernTheme.FONT_FAMILY, 12, 'bold'),
-                        bg=ModernTheme.BACKGROUND, fg=ModernTheme.TEXT)
+                        bg=ModernTheme.BACKGROUND, fg=ModernTheme.FOREGROUND)
         title.pack(pady=(0, 10))
 
         # Info
         info = tk.Label(self.frame,
                        text="Record your actions automatically\nClicks, typing, and scrolling will be captured",
                        font=(ModernTheme.FONT_FAMILY, 9),
-                       bg=ModernTheme.BACKGROUND, fg=ModernTheme.TEXT_SECONDARY,
+                       bg=ModernTheme.BACKGROUND, fg=ModernTheme.MUTED_FOREGROUND,
                        justify=tk.LEFT)
         info.pack(pady=(0, 15))
 

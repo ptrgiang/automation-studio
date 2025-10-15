@@ -205,10 +205,20 @@ class AutomationStudio:
         if 0 <= index < len(self.actions):
             from src.capture_overlay import CaptureOverlay, CaptureMode
 
+            # Minimize window before capture
+            self.root.iconify()
+
             # Show overlay and capture position
             def on_capture_complete(result):
+                # Restore window in all cases (success or cancellation)
+                self.root.deiconify()
+                self.root.lift()
+                self.root.focus_force()
+                
                 if result.get('success'):
                     self._on_position_captured(index, result)
+                else:
+                    self.update_status("Recapture cancelled")
 
             overlay = CaptureOverlay(self.root, mode=CaptureMode.POINT, callback=on_capture_complete)
             overlay.show()

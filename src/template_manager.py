@@ -32,7 +32,7 @@ class TemplateManager:
         list_frame.pack(fill='both', expand=True)
 
         listbox = Listbox(list_frame, font=(ModernTheme.FONT_FAMILY, 10),
-                            height=10, bg=ModernTheme.SURFACE, fg=ModernTheme.TEXT)
+                            height=10, bg=ModernTheme.CARD, fg=ModernTheme.CARD_FOREGROUND)
         listbox.pack(fill='both', expand=True)
 
         template_ids = list(templates.keys())
@@ -42,7 +42,7 @@ class TemplateManager:
 
         desc_label = Label(list_frame, text="",
                              font=(ModernTheme.FONT_FAMILY, 9),
-                             bg=ModernTheme.BACKGROUND, fg=ModernTheme.TEXT_SECONDARY,
+                             bg=ModernTheme.BACKGROUND, fg=ModernTheme.MUTED_FOREGROUND,
                              justify='left', wraplength=450)
         desc_label.pack(pady=(10, 0))
 
@@ -124,22 +124,22 @@ class TemplateManager:
         for category in categories:
             cat_label = Label(content, text=category,
                                 font=(ModernTheme.FONT_FAMILY, 12, 'bold'),
-                                bg=ModernTheme.BACKGROUND, fg=ModernTheme.TEXT)
+                                bg=ModernTheme.BACKGROUND, fg=ModernTheme.FOREGROUND)
             cat_label.pack(anchor='w', pady=(10, 5))
 
             cat_templates = self.core_manager.get_templates_by_category(category)
             for template in cat_templates:
-                template_frame = Frame(content, bg=ModernTheme.SURFACE,
+                template_frame = Frame(content, bg=ModernTheme.CARD,
                                          relief='solid', borderwidth=1)
                 template_frame.pack(fill='x', pady=2)
 
                 Label(template_frame, text=template.name,
                         font=(ModernTheme.FONT_FAMILY, 10, 'bold'),
-                        bg=ModernTheme.SURFACE, fg=ModernTheme.TEXT).pack(anchor='w', padx=10, pady=(5, 0))
+                        bg=ModernTheme.CARD, fg=ModernTheme.CARD_FOREGROUND).pack(anchor='w', padx=10, pady=(5, 0))
 
                 Label(template_frame, text=template.description,
                         font=(ModernTheme.FONT_FAMILY, 9),
-                        bg=ModernTheme.SURFACE, fg=ModernTheme.TEXT_SECONDARY,
+                        bg=ModernTheme.CARD, fg=ModernTheme.MUTED_FOREGROUND,
                         wraplength=550, justify='left').pack(anchor='w', padx=10, pady=(2, 5))
 
         Button(content, text="Close", command=dialog.destroy).pack(pady=(20, 0))

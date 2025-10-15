@@ -205,8 +205,11 @@ class EnhancedAction:
         elif self.type == 'wait':
             wait_type = self.params.get('wait_type', 'duration')
             if wait_type == 'duration':
-                return f"Wait {self.params.get('duration', 1.0)}s"
-            return f"Wait for {self.params.get('image_name', 'image')}"
+                duration = self.params.get('duration', 1.0)
+                return f"Wait {duration}s"
+            image_name = self.params.get('image_name', 'image')
+            timeout = self.params.get('timeout', 30)
+            return f"Wait for {image_name} (timeout: {timeout}s)"
 
         elif self.type == 'find_image':
             return f"Find image: {self.params.get('image_name', 'unknown')}"

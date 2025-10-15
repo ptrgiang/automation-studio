@@ -5,6 +5,7 @@ import pyautogui
 import time
 import logging
 import copy
+import os
 from typing import List, Dict, Any, Optional, Callable
 
 
@@ -176,9 +177,14 @@ class SimulationExecutor:
         wait_type = action.get('wait_type', 'duration')
 
         if wait_type == 'image':
+            logging.info(f"Starting wait for image: {action.get('image_name', 'image')}")
             self._wait_for_image(action)
+            logging.info(f"Finished waiting for image: {action.get('image_name', 'image')}")
         else:
-            time.sleep(action.get('duration', 1.0))
+            duration = action.get('duration', 1.0)
+            logging.info(f"Starting wait for {duration} seconds")
+            time.sleep(duration)
+            logging.info(f"Finished waiting for {duration} seconds")
 
     def _wait_for_image(self, action: Dict[str, Any]):
         """Wait for image to appear on screen"""
@@ -190,17 +196,22 @@ class SimulationExecutor:
         elapsed = 0
         found = False
 
+        logging.info(f"Starting wait for image '{action.get('image_name')}' with timeout {timeout}s")
+        
         while elapsed < timeout:
             if self.should_stop():
+                logging.info("Wait interrupted by stop signal")
                 break
 
             try:
-                location = pyautogui.locateOnScreen(image_path, confidence=confidence)
+                # Use robust search strategies
+                location = self._find_image_with_strategies(image_path, confidence)
                 if location:
                     found = True
                     logging.info(f"Wait: Image '{action.get('image_name')}' found after {elapsed}s")
                     break
-            except:
+            except Exception as e:
+                logging.debug(f"Wait: Failed to locate image: {str(e)}")
                 pass
 
             time.sleep(check_interval)
@@ -208,6 +219,8 @@ class SimulationExecutor:
 
         if not found and not self.should_stop():
             logging.warning(f"Wait: Image '{action.get('image_name')}' not found after {timeout}s timeout")
+        elif found:
+            logging.info(f"Wait: Successfully located image '{action.get('image_name')}'")
 
     def _execute_find_image(self, action: Dict[str, Any]):
         """Execute find_image action"""
@@ -216,7 +229,9 @@ class SimulationExecutor:
         click_after = action.get('click_after', False)
 
         try:
-            location = pyautogui.locateOnScreen(image_path, confidence=confidence)
+            # Try multiple strategies for finding the image
+            location = self._find_image_with_strategies(image_path, confidence)
+            
             if location:
                 center = pyautogui.center(location)
                 pyautogui.moveTo(center.x, center.y)
@@ -227,9 +242,58 @@ class SimulationExecutor:
                     pyautogui.click()
                     logging.info(f"Clicked at ({center.x}, {center.y})")
             else:
-                logging.warning(f"Image not found: {image_path}")
+                error_msg = f"Image not found: {action.get('image_name', 'unknown')}"
+                logging.error(error_msg)
+                raise Exception(error_msg)
         except Exception as e:
             logging.error(f"Error finding image: {str(e)}")
+            raise  # Re-raise the exception to stop the process
+    
+    def _find_image_with_strategies(self, image_path: str, base_confidence: float = 0.8):
+        """
+        Try multiple strategies to find an image on screen for better reliability.
+        
+        Strategies:
+        1. Standard search with base confidence
+        2. Lower confidence search (more tolerant)
+        3. Slightly higher confidence search (eliminates false positives)
+        4. Add small delay before search to ensure screen is stable
+        """
+        
+        # Add small delay to ensure screen stability
+        time.sleep(0.1)
+        
+        # Strategy 1: Standard search
+        try:
+            location = pyautogui.locateOnScreen(image_path, confidence=base_confidence)
+            if location:
+                logging.info(f"Found image with standard search (confidence: {base_confidence})")
+                return location
+        except Exception as e:
+            logging.debug(f"Standard search failed: {str(e)}")
+        
+        # Strategy 2: Lower confidence search (more tolerant)
+        try:
+            lower_confidence = max(0.5, base_confidence - 0.2)
+            location = pyautogui.locateOnScreen(image_path, confidence=lower_confidence)
+            if location:
+                logging.info(f"Found image with lower confidence search (confidence: {lower_confidence})")
+                return location
+        except Exception as e:
+            logging.debug(f"Lower confidence search failed: {str(e)}")
+        
+        # Strategy 3: Higher confidence search (eliminates false positives)
+        try:
+            higher_confidence = min(0.95, base_confidence + 0.1)
+            location = pyautogui.locateOnScreen(image_path, confidence=higher_confidence)
+            if location:
+                logging.info(f"Found image with higher confidence search (confidence: {higher_confidence})")
+                return location
+        except Exception as e:
+            logging.debug(f"Higher confidence search failed: {str(e)}")
+        
+        logging.info("All image search strategies exhausted")
+        return None
 
     def _execute_move_mouse(self, action: Dict[str, Any]):
         """Execute move_mouse action"""

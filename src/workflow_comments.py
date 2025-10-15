@@ -80,14 +80,14 @@ class CommentDialog:
         info = tk.Label(content,
                        text="Add a note or reminder for this action:",
                        font=(ModernTheme.FONT_FAMILY, 10),
-                       bg=ModernTheme.BACKGROUND, fg=ModernTheme.TEXT,
+                       bg=ModernTheme.BACKGROUND, fg=ModernTheme.FOREGROUND,
                        justify=tk.LEFT)
         info.pack(anchor=tk.W, pady=(0, 10))
 
         # Text area
         self.text = tk.Text(content, font=(ModernTheme.FONT_FAMILY, 10),
                            height=8, wrap=tk.WORD,
-                           bg=ModernTheme.SURFACE, fg=ModernTheme.TEXT,
+                           bg=ModernTheme.CARD, fg=ModernTheme.CARD_FOREGROUND,
                            relief=tk.SOLID, borderwidth=1, padx=5, pady=5)
         self.text.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
 
@@ -101,7 +101,7 @@ class CommentDialog:
 
         cancel_btn = tk.Button(button_frame, text="Cancel",
                                font=(ModernTheme.FONT_FAMILY, 10),
-                               bg=ModernTheme.SURFACE, fg=ModernTheme.TEXT,
+                               bg=ModernTheme.CARD, fg=ModernTheme.CARD_FOREGROUND,
                                relief=tk.FLAT, padx=20, pady=8,
                                cursor='hand2',
                                command=self._on_cancel)
@@ -283,7 +283,7 @@ if __name__ == "__main__":
 
     title = tk.Label(container, text="Action Comments",
                     font=(ModernTheme.FONT_FAMILY, 14, 'bold'),
-                    bg=ModernTheme.BACKGROUND, fg=ModernTheme.TEXT)
+                    bg=ModernTheme.BACKGROUND, fg=ModernTheme.FOREGROUND)
     title.pack(anchor=tk.W, pady=(0, 15))
 
     for index, comment in manager.get_all_comments().items():

@@ -251,8 +251,8 @@ class ModernGUIBuilder:
                        tags=(tag,))
 
         # Configure tags
-        tree.tag_configure('enabled', foreground=ModernTheme.TEXT)
-        tree.tag_configure('disabled', foreground=ModernTheme.TEXT_LIGHT)
+        tree.tag_configure('enabled', foreground=ModernTheme.FOREGROUND)
+        tree.tag_configure('disabled', foreground=ModernTheme.MUTED_FOREGROUND)
 
         # Update stats
         if stats_label:
@@ -402,7 +402,7 @@ class ModernDialog:
                   command=on_ok,
                   style='Primary.TButton').pack(side=tk.LEFT, padx=5)
 
-        ttk.Button(btn_frame, text=f"{Icons.CLOSE} Cancel",
+        ttk.Button(btn_frame, text=f"{Icons.CROSS} Cancel",
                   command=on_cancel,
                   style='Outline.TButton').pack(side=tk.LEFT, padx=5)
 
@@ -441,7 +441,7 @@ class ModernDialog:
 
         # Version
         ttk.Label(content, text="Version 2.0 - Professional Edition",
-                 foreground=ModernTheme.TEXT_SECONDARY).pack()
+                 foreground=ModernTheme.MUTED_FOREGROUND).pack()
 
         # Description
         desc = ("Automate your Amazon seller operations with powerful\n"
@@ -449,7 +449,7 @@ class ModernDialog:
                 "Record once, replay unlimited times.")
         ttk.Label(content, text=desc,
                  justify=tk.CENTER,
-                 foreground=ModernTheme.TEXT_SECONDARY).pack(pady=20)
+                 foreground=ModernTheme.MUTED_FOREGROUND).pack(pady=20)
 
         # Features
         features_text = (

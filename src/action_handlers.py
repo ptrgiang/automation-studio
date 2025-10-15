@@ -2,10 +2,11 @@
 Action handlers for creating and adding new actions to the workflow.
 """
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 from src.action_schema import EnhancedAction
 from src.capture_overlay import CaptureOverlay, CaptureMode, CaptureConfirmDialog
 from src.gui_modern import ModernDialog
+from src.theme import ModernTheme, Icons
 
 class ActionHandlers:
     def __init__(self, app):
@@ -148,6 +149,9 @@ class ActionHandlers:
             action_params['image_path'] = region_path
             action_params['image_name'] = f"image_{len(self.app.actions)}"
             action_params['confidence'] = 0.8
+            # Store center coordinates for recapture capability
+            action_params['x'] = x + capture_data['width'] // 2
+            action_params['y'] = y + capture_data['height'] // 2
 
         if action_type == 'wait_for_image':
             action_params['wait_type'] = 'image'
@@ -207,10 +211,18 @@ class ActionHandlers:
         dialog.grab_set()
         dialog.configure(bg=ModernTheme.BACKGROUND)
 
-        # Center dialog
+        # Center dialog on main window
         dialog.update_idletasks()
-        x = self.app.root.winfo_x() + (self.app.root.winfo_width() // 2) - 200
-        y = self.app.root.winfo_y() + (self.app.root.winfo_height() // 2) - 125
+        main_x = self.app.root.winfo_x()
+        main_y = self.app.root.winfo_y()
+        main_width = self.app.root.winfo_width()
+        main_height = self.app.root.winfo_height()
+        
+        dialog_width = 400  # Fixed width from geometry
+        dialog_height = 250  # Fixed height from geometry
+        
+        x = main_x + (main_width // 2) - (dialog_width // 2)
+        y = main_y + (main_height // 2) - (dialog_height // 2)
         dialog.geometry(f"+{x}+{y}")
 
         result = {'cancelled': True}
@@ -222,12 +234,12 @@ class ActionHandlers:
         # Title
         tk.Label(content, text="Press Key",
                 font=(ModernTheme.FONT_FAMILY, 14, 'bold'),
-                bg=ModernTheme.BACKGROUND, fg=ModernTheme.TEXT).pack(anchor=tk.W, pady=(0, 15))
+                bg=ModernTheme.BACKGROUND, fg=ModernTheme.FOREGROUND).pack(anchor=tk.W, pady=(0, 15))
 
         # Key selection
         tk.Label(content, text="Key to press:",
                 font=(ModernTheme.FONT_FAMILY, 10),
-                bg=ModernTheme.BACKGROUND, fg=ModernTheme.TEXT).pack(anchor=tk.W, pady=(0, 5))
+                bg=ModernTheme.BACKGROUND, fg=ModernTheme.FOREGROUND).pack(anchor=tk.W, pady=(0, 5))
 
         key_var = tk.StringVar(value='enter')
         key_choices = ['enter', 'tab', 'escape', 'space', 'backspace', 'delete',
@@ -241,7 +253,7 @@ class ActionHandlers:
         # Description
         tk.Label(content, text="Description (optional):",
                 font=(ModernTheme.FONT_FAMILY, 10),
-                bg=ModernTheme.BACKGROUND, fg=ModernTheme.TEXT).pack(anchor=tk.W, pady=(0, 5))
+                bg=ModernTheme.BACKGROUND, fg=ModernTheme.FOREGROUND).pack(anchor=tk.W, pady=(0, 5))
 
         desc_entry = ttk.Entry(content, width=30)
         desc_entry.pack(fill=tk.X, pady=(0, 20))
@@ -262,7 +274,7 @@ class ActionHandlers:
 
         ttk.Button(btn_frame, text=f"{Icons.CHECK} OK",
                   command=on_ok, style='Primary.TButton').pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text=f"{Icons.CLOSE} Cancel",
+        ttk.Button(btn_frame, text=f"{Icons.CROSS} Cancel",
                   command=on_cancel, style='Outline.TButton').pack(side=tk.LEFT, padx=5)
 
         # Bind keys
@@ -347,6 +359,7 @@ class ActionHandlers:
                                description=f"{action_type.title()} field")
         action.ui.order = len(self.app.actions)
         self.app.actions.append(action)
+        self.app._refresh_workflow()  # Refresh to show the new action immediately
         self.app.update_status(f"Added {action_type} action")
         self.app.is_dirty = True
 

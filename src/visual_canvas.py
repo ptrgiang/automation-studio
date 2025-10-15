@@ -253,7 +253,7 @@ if __name__ == "__main__":
     root.configure(bg=ModernTheme.BACKGROUND)
 
     # Create canvas
-    canvas_widget = tk.Canvas(root, bg=ModernTheme.SURFACE)
+    canvas_widget = tk.Canvas(root, bg=ModernTheme.CARD)
     canvas_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
     # Create visual canvas
